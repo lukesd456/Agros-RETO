@@ -1,0 +1,374 @@
+openapi: 3.0.1
+info:
+  version: '1.0.0'
+  title: API para Informes de AGROS
+  description: A traves de esta API los usuarios de AGROS podrán intercambiar informes sobre mantenimiento de cultivos
+  contact: 
+    name: AGROS Team
+    url: https://agros.tech/
+    email: hola@agros.tech
+servers:
+- url: https://fs-api.agros.tech/producers
+tags:
+- name: Manage
+  description: Interfaz para manipular el informe
+- name: Home
+  description: Pagina de inicio del CRUD
+- name: Eliminar
+  description: Eliminar informe
+- name: Detalle
+  description: Pagina de informe detallada
+- name: Publicar
+  description: Publicar informe
+- name: Buscador
+  description: Buscar informes a partir de palabras clave
+
+paths:
+  /home:
+    get: 
+      tags: 
+      - Home
+      description: A traves de esta pagina de inicio, se listaran todos los informes (Titulos, resumen y link de redireccionamiento)
+      parameters: 
+        - name: token
+          in: headers
+          description: Token de autentificacion del usuario
+          required: true
+          schema: 
+            type: string
+        - name: "limit"
+          in: "query"
+          description: "Número máximo de resultados a devolver"
+          required: false
+          schema: 
+            type: integer
+          
+      responses: 
+        200:
+          description: Listado de los informes creados por la comunidad de Agros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InformeHome'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /home/{InformeID}:
+    get:
+      tags: 
+        - Detalle
+      description: Obtiene de la base de datos el informe requerido
+      parameters:
+      - name: ID
+        in: path
+        description: ID de informe
+        required: true
+        schema:
+          type: string
+      - name: Token
+        in: headers
+        description: Token de autenticacion
+        required: true
+        schema: 
+          type: string
+      responses:
+        '200':
+          description: Devuelve el informe completo
+          content:
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  $ref: '#/components/schemas/InformeBody'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /home/post:
+    post:
+      tags: 
+        - Publicar 
+      description: Guardar informe en la base de datos
+      parameters: 
+        - name: token
+          in: headers
+          description: Token de autentificacion del usuario
+          required: true
+          schema: 
+            type: string
+        - name: Propietario
+          in: headers
+          schema: 
+            type: string
+            description: Propietario del archivo subido (Aspecto otorgado por el BACKEND)
+      requestBody:
+        content: 
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/InformePost'
+      responses: 
+        200:
+          description: El informe ha sido enviado a la base de datos
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /home/delete/{InformeID}:
+    delete: 
+      tags: 
+        - Eliminar
+      description: Eliminar informe
+      parameters: 
+        - name: token
+          in: headers
+          description: Token de autentificacion del usuario
+          required: true
+          schema: 
+            type: string
+        - name: Propietario
+          in: headers
+          schema: 
+            type: string
+            description: Propietario del archivo subido (Aspecto otorgado por el BACKEND)
+      responses: 
+        200:
+          description: El Informe ha sido eliminado correctamente.
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /home/manage/{InformeID}:
+    put: 
+      tags: 
+        - Manage
+      description: Manipulador de elementos del informe por el propietario.
+      parameters: 
+      - name: token
+        in: headers
+        description: Token de autentificacion del usuario
+        required: true
+        schema: 
+          type: string
+      - name: Aspecto
+        in: query
+        description: 
+        schema: 
+          type: string
+      - name: Propietario
+        in: headers
+        schema: 
+          type: string
+          description: Propietario del archivo subido (Aspecto otorgado por el BACKEND)
+      - name: ID
+        in: path
+        description: ID para acceder al URL que le pertenece al informe
+        required: true
+        schema: 
+          type: string
+      requestBody: 
+        content: 
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputInforme'
+      responses: 
+        200:
+          description: Los datos han sido modificados correctamente
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /home/search:
+    get:
+      description: Devuelve una lista de objetos que coinciden con las palabras clave proporcionadas
+      tags: 
+        - Buscador
+      summary: Buscar objetos por palabras clave
+      parameters:
+        - name: keywords
+          in: query
+          description: Palabras clave para buscar que correspondan al titulo de algun informe
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Número máximo de resultados a devolver
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          description: Número de resultados a saltar antes de comenzar a devolver resultados
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        200:
+          description: Devuelve los informes que coinciden con las palabras clave
+          content:
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  $ref: '#/components/schemas/InformeHome'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized' 
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas: 
+
+    InputInforme:
+      type: object
+      properties: 
+        contenido:
+          type: string
+          description: Contenido para ser modificado una vez se ha escogido el apartado.
+          
+    InformePost:
+      type: object
+      properties: 
+        ID:
+          type: string
+          description: Identificacion del informe (Aspecto otorgado por el BACKEND)
+          readOnly: true
+        Titulo:
+          type: string
+          description: Titulo del archivo
+        Resumen:
+          type: string
+          description: Resumen del informe para ser posteado dentro de la pagina de inicio
+        FechaPublicacion:
+          type: string
+          description: Fecha de publicacion
+        Descripcion:
+          type: string
+          description: Descripcion de lo que implico el mantenimiento del cultivo
+        TipoCultivo:
+          type: object
+          additionalProperties: 
+            type: string
+            description: Cultivos involucrados
+        TalentoHumano:
+          type: object
+          additionalProperties: 
+            type: string
+            description: Talento Humano involucrado para la ejecucion del mantenimiento
+        ActividadesClave:
+          type: object
+          additionalProperties: 
+            type: object
+            description: Lista de actividades que se realizaron en el mantenimiento
+        Conclusiones:
+          type: string
+          description: Conclusiones finales del efecto que significo el mantenimiento del cultivo
+
+    InformeHome:
+      type: object
+      description: Listado de informes en la pagina de inicio
+      properties: 
+        ID:
+          type: string
+          description: Identificacion del informe (Aspecto otorgado por el BACKEND)
+          readOnly: true
+        Propietario:
+          type: string
+          description: Propietario del archivo subido (Aspecto otorgado por el BACKEND)
+          readOnly: true
+        Titulo:
+          type: string
+          description: Titulo del archivo
+        Resumen:
+          type: string
+          description: Resumen del informe para ser posteado dentro de la pagina de inicio
+
+    InformeBody:
+      type: object
+      description: Elemento que contiene los datos de los informes en formato JSON.
+      properties: 
+        ID:
+          type: string
+          description: Identificacion del informe (Aspecto otorgado por el BACKEND)
+          readOnly: true
+        Propietario:
+          type: string
+          description: Propietario del archivo subido (Aspecto otorgado por el BACKEND)
+          readOnly: true
+        Titulo:
+          type: string
+          description: Titulo del archivo
+        Resumen:
+          type: string
+          description: Resumen del informe para ser posteado dentro de la pagina de inicio
+        FechaPublicacion:
+          type: string
+          description: Fecha de publicacion
+        Descripcion:
+          type: string
+          description: Descripcion de lo que implico el mantenimiento del cultivo
+        TipoCultivo:
+          type: object
+          additionalProperties: 
+            type: string
+            description: Cultivos involucrados
+        TalentoHumano:
+          type: object
+          additionalProperties: 
+            type: string
+            description: Talento Humano involucrado para la ejecucion del mantenimiento
+        ActividadesClave:
+          type: object
+          additionalProperties: 
+            type: object
+            description: Lista de actividades que se realizaron en el mantenimiento
+        Conclusiones:
+          type: string
+          description: Conclusiones finales del efecto que significo el mantenimiento del cultivo
+  responses:
+    
+    Unauthorized:
+      description: No tiene permisos para acceder a este apartado
+    
+    NotFound:
+      description: No se ha encontrado el elemento solicitado 
+    
+    BadRequest:
+      description: Hay un error en su solicitud
+      
+    ServerError:
+      description: Hay problemas con nuestro servidor
